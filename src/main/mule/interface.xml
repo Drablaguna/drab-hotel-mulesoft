@@ -3,7 +3,7 @@
     <http:listener-config name="hotel-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
-    <apikit:config name="hotel-config" api="resource::ae4ed0b2-97d0-480b-abf5-5f02aa937ba0:hotel:1.0.4:raml:zip:hotel.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="hotel-config" api="resource::ae4ed0b2-97d0-480b-abf5-5f02aa937ba0:hotel:1.0.5:raml:zip:hotel.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="hotel-main">
         <http:listener config-ref="myHTTP_Listener_config" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -132,13 +132,13 @@ output application/json
     <flow name="get:\reservations\(reservation_id):hotel-config">
         <flow-ref doc:name="Flow Reference" doc:id="41ede336-5faf-4534-b7cf-6c7fc2f82a2a" name="GET_ID_Reservation" />
     </flow>
-    <flow name="patch:\reservations\(reservation_id):application\json:hotel-config">
-        <flow-ref doc:name="Flow Reference" doc:id="172c32c1-9e49-4873-b828-40bbd12f5b9b" name="PATCH_Reservation" />
-    </flow>
     <flow name="delete:\reservations\(reservation_id):hotel-config">
         <flow-ref doc:name="Flow Reference" doc:id="e5d292b6-1809-4a04-a923-e411414598c4" name="DELETE_ID_Reservation" />
     </flow>
-    <flow name="CLEAN_OBJECT_STORE_FLOW" doc:id="01ad4852-ca7b-4ec3-911f-d258117311f7">
+    <flow name="patch:\reservations\(reservation_id):hotel-config">
+		<flow-ref doc:name="Flow Reference" doc:id="319979c1-e8a7-4435-83d0-c087897fa85a" name="PATCH_Reservation" />
+    </flow>
+	<flow name="CLEAN_OBJECT_STORE_FLOW" doc:id="01ad4852-ca7b-4ec3-911f-d258117311f7">
         <http:listener doc:name="Listener" doc:id="a5b20fad-643b-4103-9ac7-e2e20ce288a0" config-ref="myHTTP_Listener_config" path="api/clean" />
         <flow-ref doc:name="Flow Reference" doc:id="0076552e-22f7-4c3a-956a-62878f9bed7f" name="CLEAN_OBJECT_STORE" />
     </flow>

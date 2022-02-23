@@ -1,0 +1,26 @@
+%dw 2.0
+
+type auto_f0c84e1b_fecb_42a1_8cc0_f2f53ae00d89_Output_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {|
+    reserved_date_start: String, 
+    reserved_date_end: String
+  |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| reservation_id: String |}, 
+  version: String, 
+  localAddress: String
+|}
+

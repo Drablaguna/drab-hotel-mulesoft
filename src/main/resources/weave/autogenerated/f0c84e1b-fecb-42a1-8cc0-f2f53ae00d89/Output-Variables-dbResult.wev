@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_f0c84e1b_fecb_42a1_8cc0_f2f53ae00d89_Output_Variables_dbResult = Array<{|  registry_id: Number,   reservation_id: String,   guest_name: String,   reserved_date_start: Date,   reserved_date_end: Date,   total_nights?: Number,   total_price: Number,   room_id: Number,   room_size: String,   price: Number|}>
+

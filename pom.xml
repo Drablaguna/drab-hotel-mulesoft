@@ -89,7 +89,7 @@
 		<dependency>
 			<groupId>ae4ed0b2-97d0-480b-abf5-5f02aa937ba0</groupId>
 			<artifactId>hotel</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.5</version>
 			<classifier>raml</classifier>
 			<type>zip</type>
 		</dependency>
