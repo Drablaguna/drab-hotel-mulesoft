@@ -247,10 +247,15 @@ vars.dbResult map ( dbResult , indexOfDbResult ) -> {
 		</choice>
 	</flow>
 	<flow name="PATCH_Reservation" doc:id="f0c84e1b-fecb-42a1-8cc0-f2f53ae00d89" >
-		<set-variable value='#[output application/json&#10;---&#10;attributes.uriParams.reservation_id as String match  {&#10;    case x if(x contains "Individual") -&gt; "Individual"&#10;    case x if(x contains "Dual") -&gt; "Dual"&#10;    case x if(x contains "Premium") -&gt; "Premium"&#10;    else -&gt; "Individual"&#10;}]' doc:name="Set roomSize string" doc:id="595bc1bd-df5a-4fca-842b-8689711c4d5d" variableName="roomSize" />
-		<set-variable value="#[0 as Number]" doc:name="Set overlappedReservations to 0" doc:id="e08237a4-2dc1-40d6-b98a-0688a3b0e5bc" variableName="overlappedReservations " />
-		<db:select doc:name="Select all reservations" doc:id="4261ff71-4a1c-431c-ae4d-16ec21b3b54d" config-ref="Database_Config" target="dbResult" >
-			<db:sql ><![CDATA[SELECT rs.registry_id,
+		<choice doc:name="Choice" doc:id="4752ee82-baa1-487d-9618-73f4ddea74f9" >
+			<when expression='#[(daysBetween(attributes.queryParams.reserved_date_start as Date, attributes.queryParams.reserved_date_end as Date) &gt;= 1) == false]'>
+				<raise-error doc:name="Raise error" doc:id="53c759fb-7a19-4aca-9c6b-36853f7ba58e" type="ANY" description="The date range is incorrect" />
+			</when>
+			<otherwise >
+				<set-variable value='#[output application/json&#10;---&#10;attributes.uriParams.reservation_id as String match  {&#10;    case x if(x contains "Individual") -&gt; "Individual"&#10;    case x if(x contains "Dual") -&gt; "Dual"&#10;    case x if(x contains "Premium") -&gt; "Premium"&#10;    else -&gt; "Individual"&#10;}]' doc:name="Set roomSize string" doc:id="595bc1bd-df5a-4fca-842b-8689711c4d5d" variableName="roomSize" />
+				<set-variable value="#[0 as Number]" doc:name="Set overlappedReservations to 0" doc:id="e08237a4-2dc1-40d6-b98a-0688a3b0e5bc" variableName="overlappedReservations " />
+				<db:select doc:name="Select all reservations" doc:id="4261ff71-4a1c-431c-ae4d-16ec21b3b54d" config-ref="Database_Config" target="dbResult">
+			<db:sql><![CDATA[SELECT rs.registry_id,
 rs.reservation_id,
 rs.guest_name,
 rs.reserved_date_start,
@@ -265,15 +270,15 @@ LEFT JOIN Reservation as rs
 ON rs.room_id = rm.room_id
 WHERE rm.room_size = :room_size
 AND rs.reservation_id != :reservation_id;]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{
+			<db:input-parameters><![CDATA[#[{
 	"room_size": vars.roomSize as String,
 	"reservation_id": attributes.uriParams.reservation_id as String
 }]]]></db:input-parameters>
 		</db:select>
-		<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="ad59d353-b125-4ec9-9f58-cbb3138ca54c" variableName="dbResult" />
-		<ee:transform doc:name="Check dates overlap" doc:id="474b5dc8-6004-4af0-8a5e-7e7401bdc971" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+				<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="ad59d353-b125-4ec9-9f58-cbb3138ca54c" variableName="dbResult" />
+				<ee:transform doc:name="Check dates overlap" doc:id="474b5dc8-6004-4af0-8a5e-7e7401bdc971">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 
 fun checkDateOverlap(
@@ -318,13 +323,13 @@ else
     [0, payload]]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<set-variable value="#[payload[0]]" doc:name="Set overlappedReservations to result value" doc:id="9311ef15-0074-4392-9272-224f6f200a67" variableName="overlappedReservations " />
-		<set-payload value="#[payload[1]]" doc:name="Set Payload to correct data" doc:id="1da3761b-c4b8-4249-818d-77b1cc7de58c" />
-		<choice doc:name="Choice" doc:id="ef7be063-f4cc-4962-ac90-97e14b9560e6" >
+				<set-variable value="#[payload[0]]" doc:name="Set overlappedReservations to result value" doc:id="9311ef15-0074-4392-9272-224f6f200a67" variableName="overlappedReservations " />
+				<set-payload value="#[payload[1]]" doc:name="Set Payload to correct data" doc:id="1da3761b-c4b8-4249-818d-77b1cc7de58c" />
+				<choice doc:name="Choice" doc:id="ef7be063-f4cc-4962-ac90-97e14b9560e6">
 			<when expression="#[vars.overlappedReservations as Number == 1]">
 				<set-payload value='#[[&#10;    "Reservation overlaps with the following reservations, find a new date: ",&#10;    payload&#10;]]' doc:name="Set Payload to overlapped reservations" doc:id="31754528-ba4e-4341-b66c-a241f5721c22" />
 			</when>
-			<otherwise >
+			<otherwise>
 				<db:select doc:name="Select room_id" doc:id="c5826ffe-dd63-4cbb-8dc7-1522826d2b6c" config-ref="Database_Config" target="roomIDandPrice">
 					<db:sql><![CDATA[SELECT room_id, price
 FROM Room
@@ -350,15 +355,17 @@ var total_price = (total_nights * vars.roomIDandPrice.price as Number) as String
 	"reservation_id": attributes.uriParams.reservation_id as String
 }]]]></db:input-parameters>
 		</db:update>
-				<set-variable value="#[output application/json&#10;---&#10;vars.dbUpdateResult.affectedRows as Number]" doc:name="Reuse dbResult as Update affected rows result" doc:id="326e3abb-d678-4675-a8c2-07cfd8c16596" variableName="dbResult"/>
-				<choice doc:name="Choice" doc:id="bb5c9404-be55-4638-8f20-d1f36d9eabb5" >
+				<set-variable value="#[output application/json&#10;---&#10;vars.dbUpdateResult.affectedRows as Number]" doc:name="Reuse dbResult as Update affected rows result" doc:id="326e3abb-d678-4675-a8c2-07cfd8c16596" variableName="dbResult" />
+				<choice doc:name="Choice" doc:id="bb5c9404-be55-4638-8f20-d1f36d9eabb5">
 					<when expression="#[vars.dbResult == 0]">
 						<set-payload value='#[output application/json&#10;---&#10;{&#10;	"message": "Reservation with reservation_id: " ++ attributes.uriParams.reservation_id as String ++ " could not be updated."&#10;}]' doc:name="Set Payload" doc:id="7e00c8c9-1606-44ee-b78c-7249631df6e7" />
 					</when>
-					<otherwise >
+					<otherwise>
 						<set-payload value='#[output application/json&#10;---&#10;{&#10;	"message": "Reservation with reservation_id: " ++ attributes.uriParams.reservation_id as String ++ " updated successfully."&#10;}]' doc:name="Set Payload" doc:id="e9ec2d99-84b6-43fd-b81f-a91635d93275" />
 					</otherwise>
 				</choice>
+			</otherwise>
+		</choice>
 			</otherwise>
 		</choice>
 	</flow>
