@@ -21,7 +21,6 @@ LEFT JOIN Reservation as rs
 ON rs.room_id = rm.room_id
 WHERE guest_name != 'Sample';]]></db:sql>
 		</db:select>
-		<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="36d4b329-dbcf-41c1-b2df-f6f7b17f8f38" variableName="dbResult" />
 		<choice doc:name="Choice" doc:id="8060ad82-2b4f-43ee-bc2c-a25b862221c8" >
 			<when expression="#[isEmpty(vars.dbResult) == true]">
 				<set-payload value='#[output application/json&#10;---&#10;{&#10;	"message": "No reservations were found"&#10;}]' doc:name="Set Payload" doc:id="52aed03c-b043-4b68-bdd9-1135cb69830c" />
