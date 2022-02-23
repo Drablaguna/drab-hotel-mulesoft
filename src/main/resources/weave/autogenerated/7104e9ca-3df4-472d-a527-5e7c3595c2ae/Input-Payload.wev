@@ -1,0 +1,8 @@
+%dw 2.0
+
+type auto_7104e9ca_3df4_472d_a527_5e7c3595c2ae_Input_Payload = {
+  message: String, 
+  _?: Any
+} {"description": "Response based on the execution scope",
+"label": "Default Response"}
+

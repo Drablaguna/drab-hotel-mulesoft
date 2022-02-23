@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_34dc9564_178c_4ce9_b7ed_c9f402e1cba5_Output_Payload = Array<String>
+

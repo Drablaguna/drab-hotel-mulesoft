@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="GET_All_Reservations" doc:id="1f344a14-3d8c-49a5-9cff-2863f83f3a30" >
+		<db:select doc:name="Retrieve all reservations" doc:id="889a83a6-864e-4716-adc9-997f64144625" config-ref="Database_Config" target="dbResult">
+			<db:sql ><![CDATA[SELECT rs.reservation_id,
+rs.guest_name,
+rs.reserved_date_start,
+rs.reserved_date_end,
+rs.total_nights,
+rs.total_price,
+rm.room_size,
+rm.price
+FROM Room as rm 
+LEFT JOIN Reservation as rs
+ON rs.room_id = rm.room_id
+WHERE guest_name != 'Sample';]]></db:sql>
+		</db:select>
+		<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="36d4b329-dbcf-41c1-b2df-f6f7b17f8f38" variableName="dbResult" />
+		<ee:transform doc:name="Transform dbResult to JSON" doc:id="2d1ff562-0ac2-4833-b3cd-62ac83576f0a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.dbResult map ((item, index) -> {
+    reservation_id: item.reservation_id,
+    guest_name: item.guest_name,
+    reserved_date_start: item.reserved_date_start as Date,
+    reserved_date_end: item.reserved_date_end as Date,
+    total_nights: item.total_nights,
+    total_price: item.total_price,
+    reserved_room: {
+        room_size: item.room_size,
+        price: item.price
+    }
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="POST_Reservation" doc:id="636a535b-47ef-4cd8-b449-279a44337389" >
+		<ee:transform doc:name="Check correct date input" doc:id="2b6b0fc3-7a00-4993-89ec-41d7251f2942" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (daysBetween(payload.reserved_date_start as Date, payload.reserved_date_end as Date) >= 1)
+    payload
+else
+	{"Error": true}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="5efcc26d-34cc-4139-91e5-013f22dcf8b6" >
+			<when expression='#[payload."Error" == true]'>
+				<raise-error doc:name="Raise error" doc:id="d6166aa9-fd6e-4d49-bf3e-58729fd6a011" type="ANY" description="The date range is incorrect"/>
+			</when>
+			<otherwise >
+				<set-variable value="#[0 as Number]" doc:name="Set overlappedReservations to 0" doc:id="b4f84cb7-4313-408f-93cc-62a5dd1929d3" variableName="overlappedReservations "/>
+				<db:select doc:name="Select all reservations" doc:id="d3cbe57b-1e78-42de-9800-24e595da43bd" config-ref="Database_Config" target="dbResult">
+					<db:sql><![CDATA[SELECT rs.registry_id,
+rs.reservation_id,
+rs.guest_name,
+rs.reserved_date_start,
+rs.reserved_date_end,
+rs.total_nights,
+rs.total_price,
+rm.room_id,
+rm.room_size,
+rm.price
+FROM Room as rm 
+LEFT JOIN Reservation as rs
+ON rs.room_id = rm.room_id
+WHERE rm.room_size = :room_size;]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{"room_size": payload.reserved_room.room_size as String}]]]></db:input-parameters>
+				</db:select>
+				<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="f86193e6-aa09-4df1-a5ad-b8b7394f347a" variableName="dbResult"/>
+				<ee:transform doc:name="Check dates overlap" doc:id="0710c763-a1b0-4673-8aca-6b413c108c1d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+
+fun checkDateOverlap(
+    // true - NO se puede, overlap
+    // false - se puede
+    RESERVATION_dateStart: Date, 
+    RESERVATION_dateEnd: Date, 
+    STORED_dateStart: Date, 
+    STORED_dateEnd: Date) =
+    ((RESERVATION_dateStart < STORED_dateEnd) and (RESERVATION_dateEnd > STORED_dateStart))
+
+var overlappedReservations = vars.dbResult
+// Get everything as json and add boolean value if there is overlap
+map ((item) -> {
+    reservation_id: item.reservation_id,
+    room_id: item.room_id,
+    guest_name: item.guest_name,
+    total_price: item.total_price,
+    room_size: item.room_size,
+    price: item.price,
+    reserved_date_start: item.reserved_date_start as Date,
+    reserved_date_end: item.reserved_date_end as Date,
+    registry_id: item.registry_id,
+    total_nights: item.total_nights,
+    dateOverlap: checkDateOverlap(
+        payload.reserved_date_start as Date,
+        payload.reserved_date_end as Date,
+        item.reserved_date_start as Date,
+        item.reserved_date_end as Date
+    )
+})
+// Get all reservations where overlap exists
+filter ((item, index) -> item.dateOverlap == true)
+
+// Checar si overlappedReservations es vacio, si lo es SE PUEDE RESERVAR de lo contrario NO
+var isEmptyOverlappedReservations = isEmpty(overlappedReservations)
+
+---
+if(isEmptyOverlappedReservations == false) 
+    [1, overlappedReservations]
+else
+    [0, payload]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<set-variable value="#[payload[0]]" doc:name="Set overlappedReservations to result value" doc:id="9ca98228-f50a-4e25-b6e7-085fe5c44cbc" variableName="overlappedReservations "/>
+				<set-payload value="#[payload[1]]" doc:name="Set Payload to correct data" doc:id="2eeba76f-15bf-42fa-8189-80bb49aaa998" />
+				<choice doc:name="Choice" doc:id="2b7b147f-f7f0-4a67-9000-611fa9dd16f2">
+					<when expression="#[vars.overlappedReservations as Number == 1]">
+						<set-payload value='#[[&#10;    "Reservation overlaps with the following reservations, find a new date: ",&#10;    payload&#10;]]' doc:name="Set Payload to overlapped reservations" doc:id="526f5ad3-1b19-41f1-b9a9-cda694576e2d" />
+					</when>
+					<otherwise >
+						<os:retrieve doc:name="Retrieve currentID" doc:id="45281f30-76ee-475a-be85-7d01c08ec4c2" key="currentID" target="currentID" objectStore="configValues">
+			<os:default-value><![CDATA[#[0 as Number]]]></os:default-value>
+		</os:retrieve>
+						<db:select doc:name="Select room_id" doc:id="8e266485-5f89-48f3-b80a-b8cd7ae40fc5" config-ref="Database_Config" target="roomID">
+							<db:sql ><![CDATA[SELECT room_id
+FROM Room
+WHERE room_size = :room_size;]]></db:sql>
+							<db:input-parameters ><![CDATA[#[{"room_size": payload.reserved_room.room_size as String}]]]></db:input-parameters>
+						</db:select>
+						<set-variable value="#[output application/json&#10;---&#10;vars.roomID.room_id[0]]" doc:name="Set roomID as Number" doc:id="510562d8-45ef-412a-b4c9-ca43e163b8fb" variableName="roomID"/>
+						<ee:transform doc:name="Prepare reservation JSON" doc:id="0d421569-1296-48f4-8e39-75b56f5e789f">
+			<ee:message>
+				<ee:set-payload><![CDATA[output application/json
+
+var total_nights = daysBetween(payload.reserved_date_start as Date, payload.reserved_date_end as Date)
+var total_price = (total_nights * payload.reserved_room.price as Number) as String {format: "0.00"}
+var reservation_id = 
+    payload.guest_name as String replace /[^a-zA-Z]/ with "_"
+    ++ "_" ++ payload.reserved_room.room_size as String
+    ++ "_" ++ total_nights as String
+    ++ "_" ++ vars.currentID as String
+---
+payload
+++ {"reservation_id": reservation_id as String}
+++ {"total_nights": total_nights as Number}
+++ {"total_price": total_price as Number}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+						<set-variable value="#[payload.reservation_id as String]" doc:name="Set reservationID" doc:id="3fa7a421-502e-4c51-859c-1af2dada4040" variableName="reservationID"/>
+						<db:insert doc:name="Insert reservation" doc:id="cac5be53-5cee-4ddf-a1cf-207a68ea1b9f" config-ref="Database_Config">
+							<db:sql ><![CDATA[INSERT INTO Reservation (reservation_id, guest_name, reserved_date_start, reserved_date_end, total_nights, total_price, room_id) VALUES (
+	:reservation_id,
+    :guest_name,
+    :reserved_date_start,
+    :reserved_date_end,
+    :total_nights,
+    :total_price,
+    :room_id
+);]]></db:sql>
+							<db:input-parameters ><![CDATA[#[{
+    "reservation_id": payload.reservation_id as String,
+    "guest_name": payload.guest_name as String,
+    "reserved_date_start": payload.reserved_date_start as String,
+    "reserved_date_end": payload.reserved_date_end as String,
+    "total_nights": payload.total_nights as Number,
+    "total_price": payload.total_price as Number,
+    "room_id": vars.roomID as Number
+}]]]></db:input-parameters>
+						</db:insert>
+						<os:store doc:name="Increment currentID by 1" doc:id="d8fa744b-21fd-4992-ab0d-ff891a40eecf" key="currentID" objectStore="configValues">
+			<os:value><![CDATA[#[vars.currentID as Number + 1]]]></os:value>
+		</os:store>
+						<set-payload value='#[output application/json&#10;---&#10;{&#10;	"message": "Reservation created successfully! Your ID is: " ++ vars.reservationID as String&#10;}]' doc:name="Set reservation successfull msg" doc:id="d2c9b6d3-7bb7-47eb-9d7c-31ce38ab3c45" />
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="GET_ID_Reservation" doc:id="a5597a4e-63ae-4122-bfa5-a15a470e91e9">
+		<logger level="INFO" doc:name="Logger" doc:id="6e9f618e-0a93-480d-a763-fc867fecd4e0" message="GET ID Reservation" />
+		<ee:transform doc:name="Transform to JSON" doc:id="da50d4d4-e890-448e-bd07-924ae5d281b7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="PATCH_Reservation" doc:id="f0c84e1b-fecb-42a1-8cc0-f2f53ae00d89" >
+		<logger level="INFO" doc:name="Logger" doc:id="6fc3b0f7-50d6-4b3b-a766-42b0ba94c4d4" message="PATCH Reservation"/>
+	</flow>
+	<flow name="DELETE_ID_Reservation" doc:id="7104e9ca-3df4-472d-a527-5e7c3595c2ae" >
+		<logger level="INFO" doc:name="Logger" doc:id="d184eab2-b486-48c4-9c5b-2b689ad69acc" message="DELETE ID Reservation"/>
+		<os:remove doc:name="Remove reservation" doc:id="6cb17f7b-a609-4090-9098-ae994ec21819" key="#[attributes.uriParams.reservation_id as String]"/>
+		<ee:transform doc:name="Set delete message" doc:id="4c943f34-3f80-4125-a3c5-3cbf5cb21b08" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Reservation with ID: " ++ attributes.uriParams.reservation_id as String ++ " deleted!"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="CLEAN_OBJECT_STORE" doc:id="34dc9564-178c-4ce9-b7ed-c9f402e1cba5" >
+		<os:clear doc:name="Clear" doc:id="3f497891-cdc1-4f5c-8c52-934d51ac0745" objectStore="configValues"/>
+		<set-payload value='#[output application/json&#10;---&#10;{&#10;	"message": "ALL RESERVATIONS AND CONFIG VALUES WERE DELETED!"&#10;}]' doc:name="Set deleted message" doc:id="2e19eb8c-275e-4974-8836-ea5cc5290907" />
+	</flow>
+	<flow name="INITIALIZE_OBJECT_STORE_WATERMARK" doc:id="dadccdeb-cc09-4aee-a559-0faceff70585" >
+		<os:store doc:name="Store currentID (as 1)" doc:id="f38afa8d-2924-487e-a152-abb0215eb9ec" key="currentID" objectStore="configValues">
+			<os:value ><![CDATA[#[1 as Number]]]></os:value>
+		</os:store>
+		<set-payload value="#[output application/json&#10;---&#10;{&#10;	&quot;message&quot;: &quot;Config Values Object Store initialized with a starting ID of 1 available at: 'currentID' key&quot;&#10;}]" doc:name="Set ID initialization message" doc:id="afab0d37-8090-4e38-8c1c-c2f5aad87100" />
+	</flow>
+</mule>

@@ -1,0 +1,28 @@
+%dw 2.0
+
+type auto_a5597a4e_63ae_4122_bfa5_a15a470e91e9_Output_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {|
+    guest_name?: String, 
+    reserved_date_start?: String, 
+    reserved_date_end?: String, 
+    reserved_room?: String
+  |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| reservation_id: String |}, 
+  version: String, 
+  localAddress: String
+|}
+

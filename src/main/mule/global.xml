@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="myHTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7ab77626-3010-4971-bc81-cf18acfaf907" >
+		<http:listener-connection host="${http.host}" port="${http.port}" readTimeout="999999999" />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="42f16c21-ece1-4173-806a-0e769e23dae3" file="${env}.yaml" />
+	<global-property doc:name="Global Property" doc:id="d351e70f-1293-4b3a-accf-47ae09d83276" name="env" value="dev" />
+	<configuration doc:name="Configuration" doc:id="625a65cf-df91-466c-b767-bad8054d704d" defaultErrorHandler-ref="globalError_Handler" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="c9968d76-4bc0-4007-8038-f8bb10ed8233" >
+		<db:generic-connection url="jdbc:postgresql://ec2-3-230-238-86.compute-1.amazonaws.com:5432/det71p9bc2niqu" driverClassName="org.postgresql.Driver" user="zqginfwdfolxya" password="a9c67db9b22d74c8fcbbb23d0cef680acdab12283059d053b91267d757868e41"/>
+	</db:config>
+	<os:object-store name="configValues" doc:name="Object store" doc:id="b2314372-e18a-45c6-a52f-8f674ef54448" maxEntries="500" entryTtl="60" entryTtlUnit="DAYS" expirationInterval="60" expirationIntervalUnit="DAYS"/>
+	<error-handler name="globalError_Handler" doc:id="067851f6-0647-4386-98ce-6dd8c56525c7" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ef18dd6d-9a3f-4d1e-807d-92ad3b7df896" type="ANY">
+			<ee:transform doc:name="Transform Message" doc:id="aad39cb0-785d-44f9-bfd5-8067271ff1c7" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message: ": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-continue>
+	</error-handler>
+</mule>

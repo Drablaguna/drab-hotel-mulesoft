@@ -1,0 +1,6 @@
+%dw 2.0
+
+type auto_a5597a4e_63ae_4122_bfa5_a15a470e91e9_Input_Payload = Array<{  reservation_id?: String,   reserved_room: {    room_size: "Individual" | "Premium" | "Dual",     price: Number,     _?: Any  } {"description": "The Room object of the type of room reserved",
+  "label": "Room Object"},   guest_name: String,   total_price: Number,   reserved_date_start: String,   reserved_date_end: String,   total_nights: Number,   _?: Any} {"description": "A reservation object from the hotel",
+"label": "Reservation Object"}> {"description": "Array of queried rooms"}
+
