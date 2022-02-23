@@ -135,19 +135,19 @@ else
 						<os:retrieve doc:name="Retrieve currentID" doc:id="45281f30-76ee-475a-be85-7d01c08ec4c2" key="currentID" target="currentID" objectStore="configValues">
 			<os:default-value><![CDATA[#[0 as Number]]]></os:default-value>
 		</os:retrieve>
-						<db:select doc:name="Select room_id" doc:id="8e266485-5f89-48f3-b80a-b8cd7ae40fc5" config-ref="Database_Config" target="roomID">
-							<db:sql ><![CDATA[SELECT room_id
+						<db:select doc:name="Select room_id" doc:id="8e266485-5f89-48f3-b80a-b8cd7ae40fc5" config-ref="Database_Config" target="roomIDandPrice">
+							<db:sql ><![CDATA[SELECT room_id, price
 FROM Room
 WHERE room_size = :room_size;]]></db:sql>
 							<db:input-parameters ><![CDATA[#[{"room_size": payload.reserved_room.room_size as String}]]]></db:input-parameters>
 						</db:select>
-						<set-variable value="#[output application/json&#10;---&#10;vars.roomID.room_id[0]]" doc:name="Set roomID as Number" doc:id="510562d8-45ef-412a-b4c9-ca43e163b8fb" variableName="roomID"/>
+						<set-variable value='#[output application/json&#10;---&#10;{&#10;	"room_size_id": vars.roomIDandPrice[0].room_id,&#10;	"price": vars.roomIDandPrice[0].price&#10;}]' doc:name="Set roomIDandPrice as Number" doc:id="510562d8-45ef-412a-b4c9-ca43e163b8fb" variableName="roomIDandPrice"/>
 						<ee:transform doc:name="Prepare reservation JSON" doc:id="0d421569-1296-48f4-8e39-75b56f5e789f">
 			<ee:message>
 				<ee:set-payload><![CDATA[output application/json
 
 var total_nights = daysBetween(payload.reserved_date_start as Date, payload.reserved_date_end as Date)
-var total_price = (total_nights * payload.reserved_room.price as Number) as String {format: "0.00"}
+var total_price = (total_nights * vars.roomIDandPrice.price as Number) as String {format: "0.00"}
 var reservation_id = 
     payload.guest_name as String replace /[^a-zA-Z]/ with "_"
     ++ "_" ++ payload.reserved_room.room_size as String
@@ -178,7 +178,7 @@ payload
     "reserved_date_end": payload.reserved_date_end as String,
     "total_nights": payload.total_nights as Number,
     "total_price": payload.total_price as Number,
-    "room_id": vars.roomID as Number
+    "room_id": vars.roomIDandPrice.room_size_id as Number
 }]]]></db:input-parameters>
 						</db:insert>
 						<os:store doc:name="Increment currentID by 1" doc:id="d8fa744b-21fd-4992-ab0d-ff891a40eecf" key="currentID" objectStore="configValues">

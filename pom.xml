@@ -71,13 +71,6 @@
 			<classifier>mule-plugin</classifier>
 		</dependency>
 		<dependency>
-			<groupId>ae4ed0b2-97d0-480b-abf5-5f02aa937ba0</groupId>
-			<artifactId>hotel</artifactId>
-			<version>1.0.3</version>
-			<classifier>raml</classifier>
-			<type>zip</type>
-		</dependency>
-		<dependency>
 			<groupId>org.mule.connectors</groupId>
 			<artifactId>mule-db-connector</artifactId>
 			<version>1.11.0</version>
@@ -92,6 +85,13 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>42.3.3</version>
+		</dependency>
+		<dependency>
+			<groupId>ae4ed0b2-97d0-480b-abf5-5f02aa937ba0</groupId>
+			<artifactId>hotel</artifactId>
+			<version>1.0.4</version>
+			<classifier>raml</classifier>
+			<type>zip</type>
 		</dependency>
 	</dependencies>
 
