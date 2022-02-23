@@ -84,7 +84,12 @@ WHERE rm.room_size = :room_size;]]></db:sql>
 					<db:input-parameters ><![CDATA[#[{"room_size": payload.reserved_room.room_size as String}]]]></db:input-parameters>
 				</db:select>
 				<set-variable value="#[output application/json&#10;---&#10;vars.dbResult]" doc:name="Store db select in variable as JSON" doc:id="f86193e6-aa09-4df1-a5ad-b8b7394f347a" variableName="dbResult"/>
-				<ee:transform doc:name="Check dates overlap" doc:id="0710c763-a1b0-4673-8aca-6b413c108c1d">
+				<choice doc:name="Choice" doc:id="6896bef2-e7c6-4dcf-97ef-e71e5685bd7a">
+					<when expression="#[vars.dbResult[0].reservation_id == null]">
+						<set-payload value="#[[0, payload]]" doc:name="Set Payload" doc:id="738f713b-a074-4edc-a1de-2839cd9bf020" />
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Check dates overlap" doc:id="0710c763-a1b0-4673-8aca-6b413c108c1d">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -131,7 +136,9 @@ else
     [0, payload]]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-				<set-variable value="#[payload[0]]" doc:name="Set overlappedReservations to result value" doc:id="9ca98228-f50a-4e25-b6e7-085fe5c44cbc" variableName="overlappedReservations "/>
+					</otherwise>
+				</choice>
+				<set-variable value="#[payload[0]]" doc:name="Set overlappedReservations to result value" doc:id="9ca98228-f50a-4e25-b6e7-085fe5c44cbc" variableName="overlappedReservations " />
 				<set-payload value="#[payload[1]]" doc:name="Set Payload to correct data" doc:id="2eeba76f-15bf-42fa-8189-80bb49aaa998" />
 				<choice doc:name="Choice" doc:id="2b7b147f-f7f0-4a67-9000-611fa9dd16f2">
 					<when expression="#[vars.overlappedReservations as Number == 1]">
