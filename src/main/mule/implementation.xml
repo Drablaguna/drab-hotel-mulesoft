@@ -19,7 +19,7 @@ rm.price
 FROM Room as rm 
 LEFT JOIN Reservation as rs
 ON rs.room_id = rm.room_id
-WHERE guest_name != 'Sample';]]></db:sql>
+WHERE rs.reservation_id is not null;]]></db:sql>
 		</db:select>
 		<choice doc:name="Choice" doc:id="8060ad82-2b4f-43ee-bc2c-a25b862221c8" >
 			<when expression="#[isEmpty(vars.dbResult) == true]">

@@ -14,7 +14,7 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 	<global-property doc:name="Global Property" doc:id="d351e70f-1293-4b3a-accf-47ae09d83276" name="env" value="dev" />
 	<configuration doc:name="Configuration" doc:id="625a65cf-df91-466c-b767-bad8054d704d" defaultErrorHandler-ref="globalError_Handler" />
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="c9968d76-4bc0-4007-8038-f8bb10ed8233" >
-		<db:generic-connection url="jdbc:postgresql://ec2-3-230-238-86.compute-1.amazonaws.com:5432/det71p9bc2niqu" driverClassName="org.postgresql.Driver" user="zqginfwdfolxya" password="a9c67db9b22d74c8fcbbb23d0cef680acdab12283059d053b91267d757868e41"/>
+		<db:generic-connection url="${db.url}" driverClassName="org.postgresql.Driver" user="${db.user}" password="${db.pass}"/>
 	</db:config>
 	<os:object-store name="configValues" doc:name="Object store" doc:id="b2314372-e18a-45c6-a52f-8f674ef54448" maxEntries="500" entryTtl="60" entryTtlUnit="DAYS" expirationInterval="60" expirationIntervalUnit="DAYS"/>
 	<error-handler name="globalError_Handler" doc:id="067851f6-0647-4386-98ce-6dd8c56525c7" >

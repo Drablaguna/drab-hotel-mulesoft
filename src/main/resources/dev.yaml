@@ -1,3 +1,8 @@
 http:
   host: "localhost"
   port: "9999"
+
+db:
+  url: "jdbc:postgresql://ec2-3-230-238-86.compute-1.amazonaws.com:5432/det71p9bc2niqu"
+  user: "zqginfwdfolxya"
+  pass: "a9c67db9b22d74c8fcbbb23d0cef680acdab12283059d053b91267d757868e41"
